@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UserManager.API.Utilities;
 using UserManager.API.ViewModels;
@@ -72,6 +73,7 @@ namespace UserManager.API.Controllers
 
         #region Get All
         [HttpGet]
+        [Authorize]
         public async Task<IActionResult> Get()
         {
             try

@@ -1,5 +1,10 @@
+using System.Text;
 using AutoMapper;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using UserManager.API.Token;
 using UserManager.API.ViewModels;
 using UserManager.Domain.Entities;
 using UserManager.Infra.Context;
@@ -22,8 +27,8 @@ builder.Services.AddSwaggerGen();
 var autoMapperConfig = new MapperConfiguration(cfg =>
 {
     cfg.CreateMap<User, UserDTO>().ReverseMap();
-    cfg.CreateMap<CreateUserViewModel,UserDTO>().ReverseMap();
-    cfg.CreateMap<UpdatedUserViewModel,UserDTO>().ReverseMap();
+    cfg.CreateMap<CreateUserViewModel, UserDTO>().ReverseMap();
+    cfg.CreateMap<UpdatedUserViewModel, UserDTO>().ReverseMap();
 
 });
 builder.Services.AddSingleton(autoMapperConfig.CreateMapper());
@@ -31,10 +36,72 @@ builder.Services.AddSingleton(autoMapperConfig.CreateMapper());
 #endregion
 
 #region DI
-builder.Services.AddSingleton(d=>builder.Configuration);
-builder.Services.AddDbContext<UserManagerContext>(o => o.UseSqlServer(builder.Configuration["ConnectionStrings:Default"]),ServiceLifetime.Transient);
+builder.Services.AddSingleton(d => builder.Configuration);
+builder.Services.AddDbContext<UserManagerContext>(o => o.UseSqlServer(builder.Configuration["ConnectionStrings:Default"]), ServiceLifetime.Transient);
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ITokenGenerator, TokenGenerator>();
+#endregion
+
+#region  JWT
+var secretKey = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"]);
+builder.Services.AddAuthentication(x =>
+{
+    x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(x =>
+{
+    x.RequireHttpsMetadata = false;
+    x.SaveToken = true;
+    x.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(secretKey),
+        ValidateIssuer = false,
+        ValidateAudience = false
+    };
+});
+#endregion
+
+#region Swagger
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "UserManager.API",
+        Version = "v1",
+        Description = "User Manager API",
+        Contact = new OpenApiContact
+        {
+            Name = "Vinicius Oliveira",
+            Email = "viniciusoliverrs@gmail.com",
+            Url = new Uri("https://github.com/viniciusoliverrs")
+        }
+
+    });
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] { }
+        }
+    });
+});
 #endregion
 
 var app = builder.Build();
@@ -47,7 +114,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
