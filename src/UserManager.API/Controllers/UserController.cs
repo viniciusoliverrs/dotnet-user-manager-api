@@ -54,12 +54,12 @@ namespace UserManager.API.Controllers
             try
             {
                 var userDTO = _mapper.Map<UserDTO>(userViewModel);
-                var userCreated = await _userService.Update(userDTO);
+                var userUpdated = await _userService.Update(userDTO);
                 return Ok(new ResultViewModel
                 {
                     Success = true,
                     Message = "Usu�rio aualizado com sucesso!",
-                    Data = userCreated
+                    Data = userUpdated
                 });
             } catch(DomainException e)
             {

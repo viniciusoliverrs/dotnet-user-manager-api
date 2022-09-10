@@ -1,5 +1,6 @@
 using System.Text;
 using AutoMapper;
+using EscNet.IoC.Cryptography;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -104,6 +105,7 @@ builder.Services.AddSwaggerGen(c =>
 });
 #endregion
 
+builder.Services.AddRijndaelCryptography(builder.Configuration["Jwt:Key"]);
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
