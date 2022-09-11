@@ -35,8 +35,8 @@ namespace UserManager.Services.Services
             user.Validate();
             user.ChangePassword(_crypt.Encrypt(user.Password));
             var userCreated  = await _userRepository.Create(user);
-
-            return _mapper.Map<UserDTO>(userCreated);
+            var result = _mapper.Map<UserDTO>(userCreated);
+            return result;
         }
 
         public async Task<List<UserDTO>> GetAll()
